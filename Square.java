@@ -1,8 +1,4 @@
 package Project;
-
-
-
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
@@ -16,6 +12,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.border.LineBorder;
 
+
 public class Square extends JPanel {
 
     int number;
@@ -25,9 +22,25 @@ public class Square extends JPanel {
     static int totalSquares = 0;
     private int price;
     private int rentPrice;
+    private boolean Buyable=false; //da duoc mua chua
+    private int UPGRADE=0;  //upgrade nha
+
+    public boolean getBuyable() {
+        return Buyable;
+    }
+    public void setBuy(){
+        Buyable=true;
+    }
+    public int getUPGRADE() {
+        return UPGRADE;
+    }
+
+    public void incUPGRADE() {
+        UPGRADE++;
+    }
 
     public void setRentPrice(int rentPrice) {
-        this.rentPrice = rentPrice;
+        this.rentPrice = rentPrice + UPGRADE*100;// gia thue tang them voi upgrade
     }
 
     public int getRentPrice() {
@@ -47,7 +60,7 @@ public class Square extends JPanel {
     }
 
 
-    public Square(int xCoord, int yCoord, int width, int height, String labelString, int rotationDegrees) {
+    public Square(int xCoord, int yCoord, int width, int height, String labelString, final int rotationDegrees) {
         number = totalSquares;
         totalSquares++;
         setBorder(new LineBorder(new Color(0, 0, 0)));
@@ -57,9 +70,12 @@ public class Square extends JPanel {
 
         if(rotationDegrees == 0) {
             nameLabel = new JLabel(labelString);
-            nameLabel.setFont(new Font("Lucida Grande", Font.PLAIN, 9));
+            if (number==0||number==2||number==7||number==10||number==17||number==20||number==22||number==30||number==33||number==36)
+            {nameLabel.setFont(new Font("Lucida Grande", Font.BOLD, 12));
+            }
+            else nameLabel.setFont(new Font("Lucida Grande", Font.PLAIN, 10));
             nameLabel.setHorizontalAlignment(SwingConstants.CENTER);
-            nameLabel.setBounds(0,20,this.getWidth(),20);
+            nameLabel.setBounds(0,20,this.getWidth(),40);
             this.add(nameLabel);
         } else {
             // rotating a Jlabel: https://www.daniweb.com/programming/software-development/threads/390060/rotate-jlabel-or-image-in-label
@@ -91,7 +107,10 @@ public class Square extends JPanel {
             if(rotationDegrees == 135 || rotationDegrees == -135 || rotationDegrees == -45 || rotationDegrees == 45) {
                 nameLabel.setBounds(0, 0, this.getWidth(), this.getHeight());
             }
-            nameLabel.setFont(new Font("Lucida Grande", Font.PLAIN, 9));
+            if (number==0||number==2||number==7||number==10||number==17||number==20||number==22||number==30||number==33||number==36)
+            {nameLabel.setFont(new Font("Lucida Grande", Font.BOLD, 12));
+            }
+            else nameLabel.setFont(new Font("Lucida Grande", Font.PLAIN, 10));
             nameLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
             this.add(nameLabel);
@@ -105,31 +124,65 @@ public class Square extends JPanel {
             g.drawRect(0, this.getHeight()-20, this.getWidth(), 20);
             g.setColor(Color.BLUE);
             g.fillRect(0, this.getHeight()-20, this.getWidth(), 20);
+            //xay nha
+            if (UPGRADE>0) {
+                g.drawRect(0, 0, this.getWidth(), 20);
+                g.setColor(House_Color());
+                g.fillRect(0, 0, this.getWidth(), 20);
+            }
         }
         if(this.number >10&&this.number<20&&this.number!=17) {
             g.drawRect(0, 0, 20, this.getHeight());
             g.setColor(Color.YELLOW);
             g.fillRect(0, 0, 20, this.getHeight());
+            //xay nha
+            if (UPGRADE>0) {
+                g.drawRect(this.getWidth()-20, 0, 20, this.getHeight());
+                g.setColor(House_Color());
+                g.fillRect(this.getWidth()-20, 0, 20, this.getHeight());
+            }
+
         }
-        if(this.number >20&&this.number<=30&&this.number!=22) {
+        if(this.number >20&&this.number<30&&this.number!=22) {
             g.drawRect(0, 0, this.getWidth(), 20);
             g.setColor(Color.RED);
             g.fillRect(0, 0, this.getWidth(), 20);
+            //xay nha
+            if (UPGRADE>0) {
+                g.drawRect(0, this.getHeight()-20, this.getWidth(), 20);
+                g.setColor(House_Color());
+                g.fillRect(0, this.getHeight()-20, this.getWidth(), 20);
+            }
         }
         if(this.number >30&&this.number<=39&&this.number!=33&&this.number!=36) {
             g.drawRect(this.getWidth()-20, 0, 20, this.getHeight());
             g.setColor(Color.GREEN);
             g.fillRect(this.getWidth()-20, 0, 20, this.getHeight());
+            //xay nha
+            if (UPGRADE>0) {
+                g.drawRect(0, 0, 20, this.getHeight());
+                g.setColor(House_Color());
+                g.fillRect(0, 0, 20, this.getHeight());
+            }
         }
         if (number==2 || number ==17 || number ==33) {
             setBackground(Color.BLUE);
+            nameLabel.setForeground(Color.WHITE);
         }
-        if (number==7 || number ==22 || number ==36) setBackground(Color.RED);
+        if (number==7 || number ==22 || number ==36) {
+            setBackground(Color.RED);
+            nameLabel.setForeground(Color.WHITE);
+        }
+
 
     }
-
-
-
+    //mau sac cua nha
+    public Color House_Color() {
+        if (UPGRADE==1) return Color.yellow;
+        if (UPGRADE==2) return Color.RED;
+        if (UPGRADE==3) return Color.GREEN;
+        return Color.BLACK;
+    }
 
     private boolean isRentPaid = false;
     public boolean isRentPaid() {

@@ -1,7 +1,5 @@
 package Project;
 
-
-
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -29,19 +27,21 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
+import javax.swing.*;
 
-import Project.Dice;
-import Project.Player;
-import Project.Board;
+
 
 public class MonopolyMain extends JFrame{
 
     private JPanel contentIncluder;
     static JTextArea infoConsole;
     JPanel playerAssetsPanel;
+    JPanel Special_Square;
     CardLayout c1 = new CardLayout();
     ArrayList<Player> players = new ArrayList<Player>();
     static int turnCounter = 0;
+    static int JailTurn1 = 0;
+    static int JailTurn2 = 0;
     JButton btnNextTurn;
     JButton btnRollDice;
     JButton btnPayRent;
@@ -54,6 +54,7 @@ public class MonopolyMain extends JFrame{
     Boolean doubleDiceForPlayer1 = false;
     Boolean doubleDiceForPlayer2 = false;
     static int nowPlaying = 0;
+    JLayeredPane layeredPane;
 
     public MonopolyMain() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -64,7 +65,7 @@ public class MonopolyMain extends JFrame{
         setContentPane(contentIncluder);
         contentIncluder.setLayout(null);
 
-        JLayeredPane layeredPane = new JLayeredPane();
+        layeredPane = new JLayeredPane();
         layeredPane.setBorder(new LineBorder(new Color(0, 0, 0)));
         layeredPane.setBounds(10, 10, 1352, 922);
         contentIncluder.add(layeredPane);
@@ -93,10 +94,21 @@ public class MonopolyMain extends JFrame{
             public void actionPerformed(ActionEvent e) {
                 //turnCounter--; // decrease because we increased at the end of the rolldice
                 Player currentPlayer = players.get(nowPlaying);
-                infoConsole.setText("You bought "+gameBoard.getAllSquares().get(currentPlayer.getCurrentSquareNumber()).getName());
-                currentPlayer.buyTitleDeed(currentPlayer.getCurrentSquareNumber());
-                int withdrawAmount = gameBoard.getAllSquares().get(currentPlayer.getCurrentSquareNumber()).getPrice();
-                currentPlayer.withdrawFromWallet(withdrawAmount);
+                //chua mua
+                if (!gameBoard.getAllSquares().get(currentPlayer.getCurrentSquareNumber()).getBuyable()) {
+                    infoConsole.setText("You bought "+gameBoard.getAllSquares().get(currentPlayer.getCurrentSquareNumber()).getName());
+                    currentPlayer.buyTitleDeed(currentPlayer.getCurrentSquareNumber());
+                    int withdrawAmount = gameBoard.getAllSquares().get(currentPlayer.getCurrentSquareNumber()).getPrice();
+                    currentPlayer.withdrawFromWallet(withdrawAmount);
+                    gameBoard.getAllSquares().get(currentPlayer.getCurrentSquareNumber()).setBuy();}
+                else
+                    //da mua
+                    if (Player.ledger.get(currentPlayer.getCurrentSquareNumber()) == currentPlayer.getPlayerNumber()) {
+                        infoConsole.setText("You upgrade "+gameBoard.getAllSquares().get(currentPlayer.getCurrentSquareNumber()).getName());
+                        int withdrawAmount = gameBoard.getAllSquares().get(currentPlayer.getCurrentSquareNumber()).getPrice();
+                        currentPlayer.withdrawFromWallet(withdrawAmount);
+                        gameBoard.getAllSquares().get(currentPlayer.getCurrentSquareNumber()).incUPGRADE();
+                    }
                 btnBuy.setEnabled(false);
                 updatePanelPlayer1TextArea();
                 updatePanelPlayer2TextArea();
@@ -110,14 +122,13 @@ public class MonopolyMain extends JFrame{
         btnPayRent = new JButton("Pay Rent");
         btnPayRent.addActionListener(new ActionListener() {
 
-            @Override
+
             public void actionPerformed(ActionEvent e) {
                 // TODO Auto-generated method stub
                 // turnCounter--;
                 Player currentPlayer = players.get(nowPlaying);
                 Player ownerOfTheSquare = players.get((Player.ledger.get(currentPlayer.getCurrentSquareNumber()))==1?0:1);
                 infoConsole.setText("You paid to the player "+ownerOfTheSquare.getPlayerNumber());
-
                 int withdrawAmount = gameBoard.getAllSquares().get(currentPlayer.getCurrentSquareNumber()).getRentPrice();
                 System.out.println(withdrawAmount);
                 currentPlayer.withdrawFromWallet(withdrawAmount);
@@ -137,11 +148,8 @@ public class MonopolyMain extends JFrame{
         rightPanel.add(btnPayRent);
         btnPayRent.setEnabled(false);
 
-        Dice dice1 = new Dice(220, 726, 60, 60);
+        final Dice dice1 = new Dice(220, 726, 60, 60);
         layeredPane.add(dice1, new Integer(1));
-
-        Dice duy=new Dice(300,726,60,60,"dsadsa");
-        layeredPane.add(duy, new Integer(1));
 
         btnRollDice = new JButton("Roll Dice");
         btnRollDice.addActionListener(new ActionListener() {
@@ -149,65 +157,100 @@ public class MonopolyMain extends JFrame{
 
                 if(nowPlaying == 0) {
                     // player1's turn
-                    int dice1OldValue = dice1.getFaceValue();
-                    //          int dice2OldValue = dice2.getFaceValue();
-                    dice1.rollDice();
-                    //        dice2.rollDice();
-                    int dicesTotal = dice1.getFaceValue();
-
-                    player1.move(dicesTotal);
-                    if(Player.ledger.containsKey(player1.getCurrentSquareNumber()) // if bought by someone
-                            && Player.ledger.get(player1.getCurrentSquareNumber()) != player1.getPlayerNumber() // not by itself
-                    ) {
+                    if (JailTurn1 == 0) {
+                        int dice1OldValue = dice1.getFaceValue();
+                        dice1.rollDice();
+                        int dicesTotal = dice1.getFaceValue();
+                        player1.move(dicesTotal);
+                        if(Player.ledger.containsKey(player1.getCurrentSquareNumber()) // if bought by someone
+                                && Player.ledger.get(player1.getCurrentSquareNumber()) != player1.getPlayerNumber() // not by itself
+                        ) {
+                            btnBuy.setEnabled(false);
+                            btnRollDice.setEnabled(false);
+                            btnNextTurn.setEnabled(false);
+                            btnPayRent.setEnabled(true);
+                        }
+                        if (Player.ledger.containsKey(player1.getCurrentSquareNumber()) // if bought by someone
+                                && Player.ledger.get(player1.getCurrentSquareNumber()) == player1.getPlayerNumber()) { // and by itself
+                            if (gameBoard.getAllSquares().get(player1.getCurrentSquareNumber()).getUPGRADE()<=3) btnBuy.setEnabled(true);//upgarde duoc khong
+                            else btnBuy.setEnabled(false);
+                            btnPayRent.setEnabled(false);
+                            btnNextTurn.setEnabled(true);
+                        }
+                        if(gameBoard.getUnbuyableSquares().contains(gameBoard.getAllSquares().get(player1.getCurrentSquareNumber()))) {
+                            if (gameBoard.getChange().contains(gameBoard.getAllSquares().get(player1.getCurrentSquareNumber()))) {
+                                player1.Change();
+                                player1.MinusPlusPoint();
+                            }
+                            if (gameBoard.getVao_Tu().contains(gameBoard.getAllSquares().get(player1.getCurrentSquareNumber()))) {
+                                JOptionPane.showMessageDialog(null, "Go to jail for 3 turns");
+                                player1.move(30 - player1.getCurrentSquareNumber());
+                                JailTurn1 = 3;
+                            }
+                            btnBuy.setEnabled(false);
+                            btnNextTurn.setEnabled(true);
+                        } else if (!Player.ledger.containsKey(player1.getCurrentSquareNumber())) { // if not bought by someone
+                            btnBuy.setEnabled(true);
+                            btnNextTurn.setEnabled(true);
+                            btnPayRent.setEnabled(false);
+                        }
+                    }
+                    else{
                         btnBuy.setEnabled(false);
                         btnRollDice.setEnabled(false);
-                        btnNextTurn.setEnabled(false);
-                        btnPayRent.setEnabled(true);
-                    }
-                    if (Player.ledger.containsKey(player1.getCurrentSquareNumber()) // if bought by someone
-                            && Player.ledger.get(player1.getCurrentSquareNumber()) == player1.getPlayerNumber()) { // and by itself
-                        btnBuy.setEnabled(false);
                         btnPayRent.setEnabled(false);
                         btnNextTurn.setEnabled(true);
-                    }
-                    if(gameBoard.getUnbuyableSquares().contains(gameBoard.getAllSquares().get(player1.getCurrentSquareNumber()))) {
-                        btnBuy.setEnabled(false);
-                        btnNextTurn.setEnabled(true);
-                    } else if (!Player.ledger.containsKey(player1.getCurrentSquareNumber())) { // if not bought by someone
-                        btnBuy.setEnabled(true);
-                        btnNextTurn.setEnabled(true);
-                        btnPayRent.setEnabled(false);
+                        JailTurn1--;
                     }
 
 
                 } else {
                     // player2's turn
-                    int dice1OldValue = dice1.getFaceValue();
-                    dice1.rollDice();
-                    //  dice2.rollDice();
-                    int dicesTotal = dice1.getFaceValue() ;
-                    player2.move(dicesTotal);
-                    if(Player.ledger.containsKey(player2.getCurrentSquareNumber()) // if bought by someone
-                            && Player.ledger.get(player2.getCurrentSquareNumber()) != player2.getPlayerNumber() // not by itself
-                    ) {
+                    if (JailTurn2 == 0) {
+                        int dice1OldValue = dice1.getFaceValue();
+                        dice1.rollDice();
+                        int dicesTotal = dice1.getFaceValue() ;
+                        player2.move(dicesTotal);
+                        if(Player.ledger.containsKey(player2.getCurrentSquareNumber()) // if bought by someone
+                                && Player.ledger.get(player2.getCurrentSquareNumber()) != player2.getPlayerNumber() // not by itself
+                        ) {
+                            btnBuy.setEnabled(false);
+                            btnRollDice.setEnabled(false);
+                            btnNextTurn.setEnabled(false);
+                            btnPayRent.setEnabled(true);
+                        }
+                        if(Player.ledger.containsKey(player2.getCurrentSquareNumber()) // if bought by someone
+                                && Player.ledger.get(player2.getCurrentSquareNumber()) == player2.getPlayerNumber()) { // and by itself
+                            if (gameBoard.getAllSquares().get(player1.getCurrentSquareNumber()).getUPGRADE()<3) btnBuy.setEnabled(true);//upgarde duoc khong
+                            else btnBuy.setEnabled(false);
+                            btnPayRent.setEnabled(false);
+                            btnNextTurn.setEnabled(true);
+
+                        }
+                        if(gameBoard.getUnbuyableSquares().contains(gameBoard.getAllSquares().get(player2.getCurrentSquareNumber()))) {
+                            if (gameBoard.getChange().contains(gameBoard.getAllSquares().get(player2.getCurrentSquareNumber()))) {
+                                player2.Change();
+                                player2.MinusPlusPoint();
+                            }
+                            if (gameBoard.getVao_Tu().contains(gameBoard.getAllSquares().get(player2.getCurrentSquareNumber()))) {
+                                JOptionPane.showMessageDialog(null, "Go to jail for 3 turns");
+                                player2.move(30 - player2.getCurrentSquareNumber());
+                                JailTurn2 = 3;
+                            }
+                            btnBuy.setEnabled(false);
+                            btnNextTurn.setEnabled(true);
+                        } else if (!Player.ledger.containsKey(player2.getCurrentSquareNumber())) { // if not bought by someone
+                            btnBuy.setEnabled(true);
+                            btnNextTurn.setEnabled(true);
+                            btnPayRent.setEnabled(false);
+                        }
+                    }
+                    else{
                         btnBuy.setEnabled(false);
                         btnRollDice.setEnabled(false);
-                        btnNextTurn.setEnabled(false);
-                        btnPayRent.setEnabled(true);
-                    }
-                    if(Player.ledger.containsKey(player2.getCurrentSquareNumber()) // if bought by someone
-                            && Player.ledger.get(player2.getCurrentSquareNumber()) == player2.getPlayerNumber()) { // and by itself
-                        btnBuy.setEnabled(false);
                         btnPayRent.setEnabled(false);
-
-                    }
-                    if(gameBoard.getUnbuyableSquares().contains(gameBoard.getAllSquares().get(player2.getCurrentSquareNumber()))) {
-                        btnBuy.setEnabled(false);
                         btnNextTurn.setEnabled(true);
-                    } else if (!Player.ledger.containsKey(player2.getCurrentSquareNumber())) { // if not bought by someone
-                        btnBuy.setEnabled(true);
-                        btnNextTurn.setEnabled(true);
-                        btnPayRent.setEnabled(false);
+                        JailTurn2--;
                     }
 
                 }
@@ -235,7 +278,7 @@ public class MonopolyMain extends JFrame{
         btnNextTurn = new JButton("Next Turn");
         btnNextTurn.addActionListener(new ActionListener() {
 
-            @Override
+
             public void actionPerformed(ActionEvent e) {
                 // TODO Auto-generated method stub
                 btnRollDice.setEnabled(true);
@@ -264,7 +307,7 @@ public class MonopolyMain extends JFrame{
 
         });
 
-        btnNextTurn.setBounds(81, 519, 246, 53);
+        btnNextTurn.setBounds(81, 519, 246, 53); //81, 478, 117, 29
         rightPanel.add(btnNextTurn);
         btnNextTurn.setEnabled(false);
 
@@ -312,6 +355,7 @@ public class MonopolyMain extends JFrame{
         updatePanelPlayer1TextArea();
         updatePanelPlayer2TextArea();
 
+        //panel_CoHoi.setVisible(false);
 
         infoConsole = new JTextArea();
         infoConsole.setColumns(20);
@@ -364,5 +408,4 @@ public class MonopolyMain extends JFrame{
     }
 
 }
-
 
